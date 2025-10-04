@@ -15,6 +15,10 @@ const Form = () => {
   const [studentId, setStudentId] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [captchaQuestion, setCaptchaQuestion] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [captchaCorrect, setCaptchaCorrect] = useState(false);
 
   const initialForm = {
     studentName: "",
@@ -151,6 +155,50 @@ const Form = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Generate CAPTCHA question
+  const generateCaptcha = () => {
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    const operations = ["+", "-", "*"];
+    const operation = operations[Math.floor(Math.random() * operations.length)];
+
+    let question, answer;
+    switch (operation) {
+      case "+":
+        question = `${num1} + ${num2}`;
+        answer = num1 + num2;
+        break;
+      case "-":
+        question = `${num1} - ${num2}`;
+        answer = num1 - num2;
+        break;
+      case "*":
+        question = `${num1} × ${num2}`;
+        answer = num1 * num2;
+        break;
+      default:
+        question = `${num1} + ${num2}`;
+        answer = num1 + num2;
+    }
+
+    setCaptchaQuestion(question);
+    setCaptchaAnswer(answer.toString());
+    setCaptchaCorrect(false);
+    setCaptchaAnswer("");
+  };
+
+  // Validate CAPTCHA
+  const validateCaptcha = (userAnswer) => {
+    return userAnswer.trim() === captchaAnswer;
+  };
+
+  // Handle CAPTCHA input change
+  const handleCaptchaChange = (e) => {
+    const value = e.target.value;
+    setCaptchaAnswer(value);
+    setCaptchaCorrect(validateCaptcha(value));
+  };
+
   const handleCheckboxChange = (category, subject) => {
     setForm((prev) => {
       const currentArray = prev[category] || [];
@@ -267,6 +315,19 @@ const Form = () => {
       return;
     }
 
+    // Show CAPTCHA if not already shown
+    if (!showCaptcha) {
+      setShowCaptcha(true);
+      generateCaptcha();
+      return;
+    }
+
+    // Validate CAPTCHA before proceeding
+    if (!captchaCorrect) {
+      alert("Please solve the CAPTCHA correctly");
+      return;
+    }
+
     setSubmitting(true);
     try {
       console.log("🔍 Step 1: Creating student document...");
@@ -345,7 +406,8 @@ const Form = () => {
     }
   };
 
-  const isSubmitDisabled = submitting || !allFilled || !photoFile;
+  const isSubmitDisabled =
+    submitting || !allFilled || !photoFile || (showCaptcha && !captchaCorrect);
 
   // Step navigation functions
   const goToStep = (step) => {
@@ -361,6 +423,10 @@ const Form = () => {
     setStudentId(null);
     setCurrentStep(1);
     setFormSubmitted(false);
+    setShowCaptcha(false);
+    setCaptchaQuestion("");
+    setCaptchaAnswer("");
+    setCaptchaCorrect(false);
     localStorage.removeItem("uploadedDocuments");
   };
 
@@ -1177,13 +1243,69 @@ const Form = () => {
               </div>
             </div>
 
+            {/* CAPTCHA Section */}
+            {showCaptcha && (
+              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg
+                    className="w-5 h-5 text-yellow-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="font-semibold text-yellow-800">
+                    Security Verification
+                  </span>
+                </div>
+                <p className="text-sm text-yellow-700 mb-3">
+                  Please solve the math problem below to verify you are human:
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold text-gray-800 bg-white px-3 py-2 border border-gray-300 rounded">
+                      {captchaQuestion} = ?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={generateCaptcha}
+                      className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded border"
+                      title="Generate new CAPTCHA"
+                    >
+                      🔄
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={captchaAnswer}
+                    onChange={handleCaptchaChange}
+                    placeholder="Your answer"
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm w-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {captchaCorrect && (
+                    <span className="text-green-600 font-semibold flex items-center gap-1">
+                      ✓ Correct!
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 flex gap-3">
               <button
                 type="submit"
                 className="px-4 py-2 rounded-md bg-blue-900 text-white border border-blue-500 hover:bg-blue-700 disabled:opacity-60"
                 disabled={isSubmitDisabled}
               >
-                Submit
+                {showCaptcha
+                  ? captchaCorrect
+                    ? "Submit Form"
+                    : "Solve CAPTCHA First"
+                  : "Submit"}
               </button>
               <button
                 type="button"
