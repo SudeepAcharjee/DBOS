@@ -6,6 +6,26 @@ const AdminLogin = ({ onLogin }) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [retryAfter, setRetryAfter] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  // Countdown timer for rate limit
+  React.useEffect(() => {
+    if (retryAfter) {
+      const timer = setInterval(() => {
+        const now = Date.now();
+        const remaining = Math.max(0, retryAfter - now);
+        setTimeLeft(Math.ceil(remaining / 1000));
+
+        if (remaining <= 0) {
+          setRetryAfter(null);
+          setTimeLeft(0);
+        }
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [retryAfter]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,7 +57,24 @@ const AdminLogin = ({ onLogin }) => {
       onLogin(user);
     } catch (error) {
       console.error("Login error:", error);
-      setError(error.message || "Login failed. Please check your credentials.");
+
+      // Handle specific error types
+      if (error.message.includes("Rate limit")) {
+        setError(
+          "Too many login attempts. Please wait 5-10 minutes before trying again."
+        );
+        setRetryAfter(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+      } else if (error.message.includes("missing scopes")) {
+        setError(
+          "Authentication configuration error. Please contact administrator."
+        );
+      } else if (error.message.includes("Invalid credentials")) {
+        setError("Invalid email or password. Please check your credentials.");
+      } else if (error.message.includes("User not found")) {
+        setError("User account not found. Please contact administrator.");
+      } else {
+        setError(error.message || "Login failed. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
@@ -124,7 +161,7 @@ const AdminLogin = ({ onLogin }) => {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || retryAfter}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
@@ -151,6 +188,8 @@ const AdminLogin = ({ onLogin }) => {
                   </svg>
                   Signing in...
                 </div>
+              ) : retryAfter ? (
+                `Try again in ${timeLeft}s`
               ) : (
                 "Sign in"
               )}
