@@ -40,15 +40,16 @@ const StudentDetail = ({ studentId }) => {
             [Query.equal("studentId", studentId)]
           );
           if (uploadsList.documents.length > 0) {
-            uploadsData = uploadsList.documents[0];
-            console.log("Uploads data structure:", uploadsData); // Debug log
+            // Get the single uploads record for this student
+            const uploadsDoc = uploadsList.documents[0];
+            console.log("Uploads data structure:", uploadsDoc); // Debug log
 
             // Get photo URL from uploads collection
-            if (uploadsData.photoFileId) {
+            if (uploadsDoc.photoFileId) {
               try {
                 const photoRes = storage.getFilePreview(
                   bucketId,
-                  uploadsData.photoFileId
+                  uploadsDoc.photoFileId
                 );
                 photoUrl =
                   typeof photoRes === "string" ? photoRes : photoRes?.href;
@@ -56,6 +57,12 @@ const StudentDetail = ({ studentId }) => {
                 console.log("Failed to generate photo URL:", err.message);
               }
             }
+
+            // Create uploads data object
+            uploadsData = {
+              documents: uploadsDoc.documents || [],
+              studentId: studentId,
+            };
           }
         } catch (err) {
           console.log("No uploads data found for student:", err.message);
@@ -404,7 +411,11 @@ const StudentDetail = ({ studentId }) => {
             Academic Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderField("Admission For", "admissionfor", student.admissionfor)}
             {renderField("Stream", "stream", student.stream)}
+            {renderField("Session", "session", student.session)}
+            {renderField("Medium", "medium", student.medium)}
+            {renderField("Mode", "mode", student.mode)}
             {renderField("Exam Name", "examName", student.examName)}
             {renderField("Board", "board", student.board)}
             {renderField("Roll Number", "rollNumber", student.rollNumber)}
@@ -415,51 +426,87 @@ const StudentDetail = ({ studentId }) => {
               student.yearOfPassing
             )}
             {renderField("Percentage", "percentage", student.percentage)}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Subjects
-              </label>
-              {isEditing ? (
-                <div className="mt-1 space-y-2">
-                  {[1, 2, 3, 4, 5, 6].map((num) => (
-                    <input
-                      key={num}
-                      type="text"
-                      placeholder={`Subject ${num}`}
-                      value={editData[`subject_${num}`] || ""}
-                      onChange={(e) =>
-                        handleInputChange(`subject_${num}`, e.target.value)
-                      }
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+          </div>
+
+          {/* Selected Subjects */}
+          <div className="mt-6">
+            <h3 className="text-md font-semibold text-gray-700 mb-4">
+              Selected Subjects
+            </h3>
+
+            {/* Language Subjects */}
+            {student.langSubject && student.langSubject.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-600 mb-2">
+                  Language Subjects ({student.langSubject.length}/2)
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {student.langSubject.map((subject, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
+                    >
+                      {subject}
+                    </span>
                   ))}
                 </div>
-              ) : (
-                <div className="mt-1 flex flex-wrap gap-2">
-                  {[
-                    student.subject_1,
-                    student.subject_2,
-                    student.subject_3,
-                    student.subject_4,
-                    student.subject_5,
-                    student.subject_6,
-                  ]
-                    .filter(Boolean)
-                    .map((subject, index) => (
+              </div>
+            )}
+
+            {/* Non-Language Subjects */}
+            {student["non-langSubject"] &&
+              student["non-langSubject"].length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">
+                    Non-Language Subjects ({student["non-langSubject"].length}
+                    /3)
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {student["non-langSubject"].map((subject, index) => (
                       <span
                         key={index}
-                        className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm"
+                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
                       >
                         {subject}
                       </span>
                     ))}
+                  </div>
                 </div>
               )}
-            </div>
+
+            {/* Additional Subjects */}
+            {student.addSubject && student.addSubject.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-600 mb-2">
+                  Additional Subjects ({student.addSubject.length}/1)
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {student.addSubject.map((subject, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                    >
+                      {subject}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Show message if no subjects selected */}
+            {(!student.langSubject || student.langSubject.length === 0) &&
+              (!student["non-langSubject"] ||
+                student["non-langSubject"].length === 0) &&
+              (!student.addSubject || student.addSubject.length === 0) && (
+                <div className="text-sm text-gray-500 italic">
+                  No subjects selected
+                </div>
+              )}
           </div>
         </div>
 
         {/* Documents - Read Only */}
+        {/* Uploaded Documents */}
         {uploads && uploads.documents && uploads.documents.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -468,10 +515,10 @@ const StudentDetail = ({ studentId }) => {
               </h2>
               <button
                 onClick={() => {
-                  uploads.documents.forEach((doc, index) => {
+                  uploads.documents.forEach((docUrl, index) => {
                     setTimeout(() => {
-                      downloadDocument(doc, `document_${index + 1}.pdf`);
-                    }, index * 1000); // Stagger downloads by 1 second
+                      downloadDocument(docUrl, `document_${index + 1}.pdf`);
+                    }, index * 1000);
                   });
                 }}
                 className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 text-sm"
@@ -479,126 +526,35 @@ const StudentDetail = ({ studentId }) => {
                 Download All Documents
               </button>
             </div>
-            {isEditing && (
-              <p className="text-sm text-gray-500 mb-4">
-                Documents cannot be edited through this form
-              </p>
-            )}
             <div className="space-y-2">
-              {(() => {
-                // Define the expected document names in order
-                const expectedDocuments = [
-                  "Signature",
-                  "Aadhar Card",
-                  "Birth Certificate",
-                  "Class VII or IX Pass Certificate",
-                  "Class VII or IX Marksheet",
-                  "10th Marksheet",
-                  "10th Pass Certificate",
-                  "10th Admit Card",
-                ];
-
-                // Create a mapping of documents with their proper names
-                const documentMapping = uploads.documents.map((doc, index) => {
-                  // Try to extract meaningful name from URL
-                  const urlParts = doc.split("/");
-                  const fileName = urlParts[urlParts.length - 1];
-                  const lowerFileName = fileName.toLowerCase();
-
-                  // Check if it contains common document type keywords
-                  let documentName = `Document ${index + 1}`; // Default fallback
-
-                  if (lowerFileName.includes("signature")) {
-                    documentName = "Signature";
-                  } else if (
-                    lowerFileName.includes("aadhaar") ||
-                    lowerFileName.includes("aadhar")
-                  ) {
-                    documentName = "Aadhar Card";
-                  } else if (lowerFileName.includes("birth")) {
-                    documentName = "Birth Certificate";
-                  } else if (
-                    lowerFileName.includes("class") &&
-                    (lowerFileName.includes("7") || lowerFileName.includes("9"))
-                  ) {
-                    if (lowerFileName.includes("pass")) {
-                      documentName = "Class VII or IX Pass Certificate";
-                    } else if (lowerFileName.includes("mark")) {
-                      documentName = "Class VII or IX Marksheet";
-                    }
-                  } else if (
-                    lowerFileName.includes("10th") ||
-                    lowerFileName.includes("tenth")
-                  ) {
-                    if (lowerFileName.includes("mark")) {
-                      documentName = "10th Marksheet";
-                    } else if (lowerFileName.includes("pass")) {
-                      documentName = "10th Pass Certificate";
-                    } else if (
-                      lowerFileName.includes("admin") ||
-                      lowerFileName.includes("admit")
-                    ) {
-                      documentName = "10th Admit Card";
-                    }
-                  }
-
-                  return {
-                    url: doc,
-                    name: documentName,
-                    originalIndex: index,
-                  };
-                });
-
-                // Sort documents by their expected order
-                const sortedDocuments = documentMapping.sort((a, b) => {
-                  const indexA = expectedDocuments.indexOf(a.name);
-                  const indexB = expectedDocuments.indexOf(b.name);
-
-                  // If both documents are in the expected list, sort by their position
-                  if (indexA !== -1 && indexB !== -1) {
-                    return indexA - indexB;
-                  }
-
-                  // If only one is in the expected list, prioritize it
-                  if (indexA !== -1) return -1;
-                  if (indexB !== -1) return 1;
-
-                  // If neither is in the expected list, maintain original order
-                  return a.originalIndex - b.originalIndex;
-                });
-
-                return sortedDocuments.map((doc, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 border border-gray-200 rounded-md"
-                  >
-                    <span className="text-sm font-medium text-gray-700">
-                      {doc.name}
-                    </span>
-                    <div className="flex gap-2">
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3 py-1 bg-blue-900 text-white rounded-md hover:bg-blue-700 text-sm"
-                      >
-                        View Document
-                      </a>
-                      <button
-                        onClick={() =>
-                          downloadDocument(
-                            doc.url,
-                            `${doc.name.replace(/\s+/g, "_")}.pdf`
-                          )
-                        }
-                        className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-                      >
-                        Download
-                      </button>
-                    </div>
+              {uploads.documents.map((docUrl, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 border border-gray-200 rounded-md"
+                >
+                  <span className="text-sm font-medium text-gray-700">
+                    Document {index + 1}
+                  </span>
+                  <div className="flex gap-2">
+                    <a
+                      href={docUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1 bg-blue-900 text-white rounded-md hover:bg-blue-700 text-sm"
+                    >
+                      View Document
+                    </a>
+                    <button
+                      onClick={() =>
+                        downloadDocument(docUrl, `document_${index + 1}.pdf`)
+                      }
+                      className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                    >
+                      Download
+                    </button>
                   </div>
-                ));
-              })()}
+                </div>
+              ))}
             </div>
           </div>
         )}

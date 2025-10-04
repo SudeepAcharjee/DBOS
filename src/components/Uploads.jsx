@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { databases, storage } from "../appwrite";
-import { ID } from "appwrite";
+import { ID, Query } from "appwrite";
 
 const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID; // keep env key consistent
@@ -27,6 +27,14 @@ const DocumentRow = ({
 
   const handleUpload = async () => {
     if (!doc.file || doc.uploaded) return;
+
+    if (!studentId) {
+      alert(
+        "Student ID is required for upload. Please ensure the form is submitted first."
+      );
+      return;
+    }
+
     setUploading(true);
     try {
       const created = await storage.createFile(bucketId, ID.unique(), doc.file);
@@ -37,7 +45,7 @@ const DocumentRow = ({
         throw new Error("Failed to generate file URL");
       }
 
-      onUploaded(index, created.$id, viewUrl);
+      onUploaded(index, created.$id, viewUrl, studentId);
     } catch (err) {
       alert(err?.message || "Upload failed");
     } finally {
@@ -98,6 +106,9 @@ const Uploads = ({ studentId }) => {
     { title: "", file: null, uploaded: false, fileId: "", viewUrl: "" },
   ]);
 
+  // Debug: Log studentId when component mounts
+  console.log("Uploads component received studentId:", studentId);
+
   // List of important documents that need to be uploaded
   const requiredDocuments = [
     { id: "signature", name: "Signature", required: true },
@@ -130,13 +141,30 @@ const Uploads = ({ studentId }) => {
     setDocs((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleUploaded = async (idx, fileId, viewUrl, studentId) => {
-    console.log("handleUploaded called with:", { idx, fileId, viewUrl });
+  const handleUploaded = async (idx, fileId, viewUrl, studentIdParam) => {
+    // Use the studentId from props (real studentId from admissionform)
+    const currentStudentId = studentId;
 
-    // Validate viewUrl before proceeding
+    console.log("handleUploaded called with:", {
+      idx,
+      fileId,
+      viewUrl,
+      studentIdParam,
+      currentStudentId,
+    });
+
+    // Validate required parameters before proceeding
     if (!viewUrl || typeof viewUrl !== "string") {
       console.error("Invalid viewUrl:", viewUrl);
       alert("Failed to generate file URL. Please try again.");
+      return;
+    }
+
+    if (!currentStudentId) {
+      console.error("StudentId is required but not provided");
+      alert(
+        "Student ID is required for upload. Please ensure the form is submitted first."
+      );
       return;
     }
 
@@ -154,47 +182,41 @@ const Uploads = ({ studentId }) => {
         next.push({ fileId, url: viewUrl, title: docs[idx].title });
       localStorage.setItem("uploadedDocuments", JSON.stringify(next));
 
-      // Also save to uploads collection documents array
+      // Update or create the student's uploads record
       const uploadsCollectionId = import.meta.env
         .VITE_APPWRITE_COLLECTION_UPLOADS;
 
-      // Get existing uploads collection documents
+      // Check if student already has an uploads record
       const existingDocs = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         uploadsCollectionId,
-        []
+        [Query.equal("studentId", currentStudentId)]
       );
 
       if (existingDocs.documents.length > 0) {
-        // Update existing document with new document URL
+        // Update existing record - add new document to the array
         const existingDoc = existingDocs.documents[0];
         const currentDocuments = existingDoc.documents || [];
-        // Filter out any null/undefined values before adding new URL
-        const filteredDocuments = currentDocuments.filter(
-          (doc) => doc && typeof doc === "string"
-        );
-        const newDocuments = [...filteredDocuments, viewUrl];
+        const newDocuments = [...currentDocuments, viewUrl];
 
-        console.log("Updating documents array with:", newDocuments);
-
+        console.log("Updating existing record with new document:", viewUrl);
         await databases.updateDocument(
           import.meta.env.VITE_APPWRITE_DATABASE_ID,
           uploadsCollectionId,
           existingDoc.$id,
           {
-            studentId,
             documents: newDocuments,
           }
         );
       } else {
-        // Create new document if none exists
-        console.log("Creating new document with URL:", viewUrl);
+        // Create new record for this student
+        console.log("Creating new record for student:", currentStudentId);
         await databases.createDocument(
           import.meta.env.VITE_APPWRITE_DATABASE_ID,
           uploadsCollectionId,
           ID.unique(),
           {
-            studentId,
+            studentId: currentStudentId,
             documents: [viewUrl],
           }
         );
@@ -339,8 +361,8 @@ const Uploads = ({ studentId }) => {
             doc={doc}
             onChange={handleChange}
             onRemove={handleRemove}
-            onUploaded={(idx, fileId, viewUrl) =>
-              handleUploaded(idx, fileId, viewUrl, studentId)
+            onUploaded={(idx, fileId, viewUrl, studentIdParam) =>
+              handleUploaded(idx, fileId, viewUrl, studentIdParam)
             }
             studentId={studentId}
           />
