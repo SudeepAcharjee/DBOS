@@ -6,23 +6,12 @@ const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID; // keep env key consistent
 const collectionUploadsId = import.meta.env.VITE_APPWRITE_COLLECTION_UPLOADS;
 
-const DocumentRow = ({
-  index,
-  doc,
-  onChange,
-  onRemove,
-  onUploaded,
-  studentId,
-}) => {
+const DocumentRow = ({ index, doc, onChange, onUploaded, studentId }) => {
   const [uploading, setUploading] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files && e.target.files[0];
     onChange(index, { ...doc, file });
-  };
-
-  const handleTitleChange = (e) => {
-    onChange(index, { ...doc, title: e.target.value });
   };
 
   const handleUpload = async () => {
@@ -56,18 +45,21 @@ const DocumentRow = ({
   return (
     <div className="p-4 border border-gray-300 rounded-lg bg-white space-y-3">
       <div className="flex flex-col gap-3">
-        <input
-          type="file"
-          onChange={handleFileChange}
-          disabled={uploading || doc.uploaded}
-        />
-        <input
-          type="text"
-          placeholder="Document Title (e.g., Signature, Aadhaar Card, Birth Certificate, etc.)"
-          value={doc.title}
-          onChange={handleTitleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-        />
+        <label className="flex items-center gap-2">
+          <input
+            type="file"
+            onChange={handleFileChange}
+            disabled={uploading || doc.uploaded}
+          />
+          <svg
+            className="w-4 h-4 text-gray-600"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path d="M4 3a2 2 0 00-2 2v5a5 5 0 0010 0V6a1 1 0 10-2 0v4a3 3 0 11-6 0V5a1 1 0 011-1h5a1 1 0 100-2H4z" />
+            <path d="M15 7a1 1 0 011 1v2h2a1 1 0 110 2h-2v2a1 1 0 11-2 0v-2h-2a1 1 0 110-2h2V8a1 1 0 011-1z" />
+          </svg>
+        </label>
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -87,13 +79,6 @@ const DocumentRow = ({
               View
             </a>
           )}
-          <button
-            type="button"
-            onClick={() => onRemove(index)}
-            className="text-red-600 text-sm"
-          >
-            Remove
-          </button>
         </div>
       </div>
     </div>
@@ -102,9 +87,8 @@ const DocumentRow = ({
 
 const Uploads = ({ studentId }) => {
   const [message, setMessage] = useState("");
-  const [docs, setDocs] = useState([
-    { title: "", file: null, uploaded: false, fileId: "", viewUrl: "" },
-  ]);
+  const [docs, setDocs] = useState([]);
+  const [selectedType, setSelectedType] = useState("");
 
   // Debug: Log studentId when component mounts
   console.log("Uploads component received studentId:", studentId);
@@ -135,10 +119,6 @@ const Uploads = ({ studentId }) => {
 
   const handleChange = (idx, next) => {
     setDocs((prev) => prev.map((d, i) => (i === idx ? next : d)));
-  };
-
-  const handleRemove = (idx) => {
-    setDocs((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleUploaded = async (idx, fileId, viewUrl, studentIdParam) => {
@@ -242,6 +222,25 @@ const Uploads = ({ studentId }) => {
       ...prev,
       { title: "", file: null, uploaded: false, fileId: "", viewUrl: "" },
     ]);
+
+  const ensureDocForType = (typeName) => {
+    setDocs((prev) => {
+      const existsIndex = prev.findIndex(
+        (d) => (d.title || "").toLowerCase() === typeName.toLowerCase()
+      );
+      if (existsIndex !== -1) return prev;
+      return [
+        ...prev,
+        {
+          title: typeName,
+          file: null,
+          uploaded: false,
+          fileId: "",
+          viewUrl: "",
+        },
+      ];
+    });
+  };
 
   const saveSummary = async () => {
     try {
@@ -353,29 +352,71 @@ const Uploads = ({ studentId }) => {
         </div>
       </div>
 
-      <div className="space-y-3">
-        {docs.map((doc, idx) => (
-          <DocumentRow
-            key={idx}
-            index={idx}
-            doc={doc}
-            onChange={handleChange}
-            onRemove={handleRemove}
-            onUploaded={(idx, fileId, viewUrl, studentIdParam) =>
-              handleUploaded(idx, fileId, viewUrl, studentIdParam)
-            }
-            studentId={studentId}
-          />
-        ))}
+      {/* Select document type to upload */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Select Document Type to Upload
+        </label>
+        <select
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          value={selectedType}
+          onChange={(e) => {
+            const val = e.target.value;
+            setSelectedType(val);
+            if (val) ensureDocForType(val);
+          }}
+        >
+          <option value="">Select a document</option>
+          {requiredDocuments.map((d) => (
+            <option key={d.id} value={d.name}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+
+        {selectedType && (
+          <div className="mt-4">
+            {docs
+              .map((doc, idx) => ({ doc, idx }))
+              .filter(({ doc }) => (doc.title || "") === selectedType)
+              .map(({ doc, idx }) => (
+                <DocumentRow
+                  key={`${doc.title}-${idx}`}
+                  index={idx}
+                  doc={doc}
+                  onChange={handleChange}
+                  onUploaded={(i, fileId, viewUrl, sid) =>
+                    handleUploaded(i, fileId, viewUrl, sid)
+                  }
+                  studentId={studentId}
+                />
+              ))}
+          </div>
+        )}
       </div>
 
+      {/* Submit button with confirmation; replaces external control */}
       <div className="flex items-center gap-3 pt-2">
         <button
           type="button"
-          onClick={addDoc}
+          onClick={() => {
+            const confirmed = window.confirm(
+              "Are you sure you want to submit and reset the form?"
+            );
+            if (confirmed) {
+              try {
+                localStorage.removeItem("uploadedDocuments");
+              } catch (_) {}
+              setDocs([]);
+              setSelectedType("");
+              setMessage("Submission completed and form reset.");
+              // Redirect to Admission Form (home) to start a new application
+              window.location.href = "/";
+            }
+          }}
           className="px-4 py-2 rounded-md bg-blue-900 text-white"
         >
-          Add Another Document
+          Submit
         </button>
         {message && <span className="text-sm text-gray-700">{message}</span>}
       </div>

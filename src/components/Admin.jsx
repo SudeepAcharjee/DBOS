@@ -13,8 +13,10 @@ const Admin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [sortDir, setSortDir] = useState("desc");
+  const [sortBy, setSortBy] = useState("district");
+  const [sortDir, setSortDir] = useState("asc");
+  const [admissionByFilter, setAdmissionByFilter] = useState("");
+  const [admissionForFilter, setAdmissionForFilter] = useState("");
 
   // Check if user is already logged in with Appwrite
   useEffect(() => {
@@ -147,16 +149,30 @@ const Admin = () => {
           .includes(term)
       );
     }
+    if (admissionByFilter) {
+      data = data.filter(
+        (r) =>
+          (r.admissionBy || "").toLowerCase() ===
+          admissionByFilter.toLowerCase()
+      );
+    }
+    if (admissionForFilter) {
+      if (admissionForFilter === "10th") {
+        data = data.filter((r) => (r.admissionfor || "").includes("10th"));
+      } else if (admissionForFilter === "12th") {
+        data = data.filter((r) => (r.admissionfor || "").includes("12th"));
+      }
+    }
     const sorted = [...data].sort((a, b) => {
       const dir = sortDir === "asc" ? 1 : -1;
-      if (sortBy === "createdAt")
-        return (new Date(a.createdAt) - new Date(b.createdAt)) * dir;
-      if (sortBy === "studentName")
-        return a.studentName.localeCompare(b.studentName) * dir;
+      if (sortBy === "district")
+        return (a.district || "").localeCompare(b.district || "") * dir;
+      if (sortBy === "state")
+        return (a.state || "").localeCompare(b.state || "") * dir;
       return 0;
     });
     return sorted;
-  }, [rows, search, sortBy, sortDir]);
+  }, [rows, search, sortBy, sortDir, admissionByFilter, admissionForFilter]);
 
   // Show login if not authenticated
   if (!isAuthenticated) {
@@ -224,8 +240,27 @@ const Admin = () => {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
-            <option value="createdAt">Sort by Created</option>
-            <option value="studentName">Sort by Name</option>
+            <option value="district">Sort by District</option>
+            <option value="state">Sort by State</option>
+          </select>
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            value={admissionByFilter}
+            onChange={(e) => setAdmissionByFilter(e.target.value)}
+          >
+            <option value="">All Admission By</option>
+            <option value="Study Center">Study Center</option>
+            <option value="Counseling Center">Counseling Center</option>
+            <option value="State Cordinator">State Cordinator</option>
+          </select>
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            value={admissionForFilter}
+            onChange={(e) => setAdmissionForFilter(e.target.value)}
+          >
+            <option value="">All Levels</option>
+            <option value="10th">10th</option>
+            <option value="12th">12th</option>
           </select>
         </div>
       </div>
