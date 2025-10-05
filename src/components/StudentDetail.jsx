@@ -219,358 +219,389 @@ const StudentDetail = ({ studentId }) => {
     );
   }
 
+  const handlePrint = () => {
+    const style = document.createElement("style");
+    style.media = "print";
+    style.innerHTML = `@page { size: A4 landscape; margin: 10mm; }`;
+    document.head.appendChild(style);
+    const cleanup = () => {
+      try {
+        document.head.removeChild(style);
+      } catch (_) {}
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+  };
+
   return (
-    <div className="max-w-4xl mx-auto my-6 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-blue-900">Student Details</h1>
-        <div className="flex gap-2">
-          {!isEditing ? (
-            <button
-              onClick={handleEdit}
-              className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800"
-            >
-              Edit
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-900 disabled:opacity-50"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button
-                onClick={handleCancel}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-            </>
-          )}
-          <button
-            onClick={goBack}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
-          >
-            Back to Admin
-          </button>
-        </div>
+    <div className="max-w-5xl mx-auto">
+      <div className="flex flex-col items-center gap-3 py-6">
+        <img
+          src="/DBOS-logo-300x300.png"
+          alt="Board Logo"
+          className="w-28 h-28 object-contain"
+        />
+        <h1 className="text-4xl font-extrabold tracking-wide text-blue-900 text-center uppercase">
+          Dihing Board of Open Schooling
+        </h1>
+        <p className="text-base text-gray-700 font-semibold text-center">
+          A Govt. Recognised Board | An ISO 9001:2015 Certified Board
+        </p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-6">
-        {/* Photo - Read Only */}
-        {student.photoUrl && (
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Passport Photo
-            </h2>
-            <div className="flex justify-center">
-              <img
-                src={student.photoUrl}
-                alt="Student Photo"
-                className="w-32 h-32 object-cover rounded-lg border border-gray-300"
-              />
-            </div>
-            {isEditing && (
-              <p className="text-sm text-gray-500 text-center mt-2">
-                Photo cannot be edited through this form
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Personal Information */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Personal Information
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderField("Student Name", "studentName", student.studentName)}
-            {renderField("Father's Name", "fatherName", student.fatherName)}
-            {renderField("Mother's Name", "motherName", student.motherName)}
-            {isEditing ? (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Date of Birth (DOB)
-                </label>
-                <input
-                  type="date"
-                  value={editData.dob ? editData.dob.split("T")[0] : ""}
-                  onChange={(e) => handleInputChange("dob", e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Date of Birth (DOB)
-                </label>
-                <p className="mt-1 text-sm text-gray-900">
-                  {student.dob
-                    ? new Date(student.dob).toLocaleDateString()
-                    : "—"}
-                </p>
-              </div>
-            )}
-            {renderField("Gender", "gender", student.gender)}
-            {renderField("Mobile Number", "mobile", student.mobile, "tel")}
-            {renderField("Email", "email", student.email, "email")}
-            {renderField("Caste", "caste", student.caste)}
-            {renderField("Religion", "religion", student.religion)}
-            {renderField("Nationality", "nationality", student.nationality)}
-            {renderField(
-              "Marital Status",
-              "maritalStatus",
-              student.maritalStatus
-            )}
-            {renderField("Aadhaar Number", "aadhaar", student.aadhaar)}
-            {isEditing ? (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Present Address
-                </label>
-                <textarea
-                  value={editData.presentAddress || ""}
-                  onChange={(e) =>
-                    handleInputChange("presentAddress", e.target.value)
-                  }
-                  rows={3}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Present Address
-                </label>
-                <div className="mt-1 text-sm text-gray-900">
-                  {student.presentAddress ? (
-                    Array.isArray(student.presentAddress) ? (
-                      <ul className="list-disc list-inside space-y-1">
-                        {student.presentAddress.map((addr, index) => (
-                          <li key={index}>{addr}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>{student.presentAddress}</p>
-                    )
-                  ) : (
-                    "—"
-                  )}
-                </div>
-              </div>
-            )}
-            {renderField("Present PIN Code", "presentPin", student.presentPin)}
-            {isEditing ? (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Permanent Address
-                </label>
-                <textarea
-                  value={editData.permanentAddress || ""}
-                  onChange={(e) =>
-                    handleInputChange("permanentAddress", e.target.value)
-                  }
-                  rows={3}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Permanent Address
-                </label>
-                <div className="mt-1 text-sm text-gray-900">
-                  {student.permanentAddress ? (
-                    Array.isArray(student.permanentAddress) ? (
-                      <ul className="list-disc list-inside space-y-1">
-                        {student.permanentAddress.map((addr, index) => (
-                          <li key={index}>{addr}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>{student.permanentAddress}</p>
-                    )
-                  ) : (
-                    "—"
-                  )}
-                </div>
-              </div>
-            )}
-            {renderField(
-              "Permanent PIN Code",
-              "permanentPin",
-              student.permanentPin
-            )}
-          </div>
-        </div>
-
-        {/* Academic Information */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Academic Information
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderField("Admission For", "admissionfor", student.admissionfor)}
-            {renderField("Stream", "stream", student.stream)}
-            {renderField("Session", "session", student.session)}
-            {renderField("Medium", "medium", student.medium)}
-            {renderField("Mode", "mode", student.mode)}
-            {renderField("Exam Name", "examName", student.examName)}
-            {renderField("Board", "board", student.board)}
-            {renderField("Roll Number", "rollNumber", student.rollNumber)}
-            {renderField("Marks", "marks", student.marks)}
-            {renderField(
-              "Year of Passing",
-              "yearOfPassing",
-              student.yearOfPassing
-            )}
-            {renderField("Percentage", "percentage", student.percentage)}
-          </div>
-
-          {/* Selected Subjects */}
-          <div className="mt-6">
-            <h3 className="text-md font-semibold text-gray-700 mb-4">
-              Selected Subjects
-            </h3>
-
-            {/* Language Subjects */}
-            {student.langSubject && student.langSubject.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-600 mb-2">
-                  Language Subjects ({student.langSubject.length}/2)
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {student.langSubject.map((subject, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
-                    >
-                      {subject}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Non-Language Subjects */}
-            {student["non-langSubject"] &&
-              student["non-langSubject"].length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">
-                    Non-Language Subjects ({student["non-langSubject"].length}
-                    /3)
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {student["non-langSubject"].map((subject, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                      >
-                        {subject}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+      <div
+        className="max-w-4xl mx-auto my-6 p-1 rounded-xl"
+        style={{ background: "linear-gradient(121deg, #FF580A, #0D0D6B)" }}
+      >
+        <div className="p-6 rounded-xl bg-white">
+          <div className="flex items-center justify-between mb-6 print:hidden">
+            <h1 className="text-2xl font-bold text-blue-900">
+              Student Details
+            </h1>
+            <div className="flex gap-2">
+              {!isEditing ? (
+                <button
+                  onClick={handleEdit}
+                  className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800"
+                >
+                  Edit
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-900 disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                </>
               )}
-
-            {/* Additional Subjects */}
-            {student.addSubject && student.addSubject.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-600 mb-2">
-                  Additional Subjects ({student.addSubject.length}/1)
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {student.addSubject.map((subject, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
-                    >
-                      {subject}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Show message if no subjects selected */}
-            {(!student.langSubject || student.langSubject.length === 0) &&
-              (!student["non-langSubject"] ||
-                student["non-langSubject"].length === 0) &&
-              (!student.addSubject || student.addSubject.length === 0) && (
-                <div className="text-sm text-gray-500 italic">
-                  No subjects selected
-                </div>
-              )}
-          </div>
-        </div>
-
-        {/* Documents - Read Only */}
-        {/* Uploaded Documents */}
-        {uploads && uploads.documents && uploads.documents.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">
-                Uploaded Documents
-              </h2>
               <button
-                onClick={() => {
-                  uploads.documents.forEach((docUrl, index) => {
-                    setTimeout(() => {
-                      downloadDocument(docUrl, `document_${index + 1}.pdf`);
-                    }, index * 1000);
-                  });
-                }}
-                className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 text-sm"
+                onClick={handlePrint}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
               >
-                Download All Documents
+                Print (Landscape)
+              </button>
+              <button
+                onClick={goBack}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              >
+                Back to Admin
               </button>
             </div>
-            <div className="space-y-2">
-              {uploads.documents.map((docUrl, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 border border-gray-200 rounded-md"
-                >
-                  <span className="text-sm font-medium text-gray-700">
-                    Document {index + 1}
-                  </span>
-                  <div className="flex gap-2">
-                    <a
-                      href={docUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-1 bg-blue-900 text-white rounded-md hover:bg-blue-700 text-sm"
-                    >
-                      View Document
-                    </a>
-                    <button
-                      onClick={() =>
-                        downloadDocument(docUrl, `document_${index + 1}.pdf`)
-                      }
-                      className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-                    >
-                      Download
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
-        )}
 
-        {/* Application Status */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Application Status
-          </h2>
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-red-100 text-red-700 rounded-md text-sm">
-              {student.status || "Not Approved"}
-            </span>
-            <button className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">
-              Approve Application
-            </button>
+          <div className="space-y-6">
+            {/* Photo - Read Only */}
+            {student.photoUrl && (
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 print:hidden">
+                  Passport Photo
+                </h2>
+                <div className="flex justify-center">
+                  <img
+                    src={student.photoUrl}
+                    alt="Student Photo"
+                    className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                  />
+                </div>
+                {isEditing && (
+                  <p className="text-sm text-gray-500 text-center mt-2 print:hidden">
+                    Photo cannot be edited through this form
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Personal Information */}
+            <div className="border border-gray-200 rounded-md p-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                Personal Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {renderField(
+                  "Student Name",
+                  "studentName",
+                  student.studentName
+                )}
+                {renderField("Father's Name", "fatherName", student.fatherName)}
+                {renderField("Mother's Name", "motherName", student.motherName)}
+                {isEditing ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Date of Birth (DOB)
+                    </label>
+                    <input
+                      type="date"
+                      value={editData.dob ? editData.dob.split("T")[0] : ""}
+                      onChange={(e) => handleInputChange("dob", e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Date of Birth (DOB)
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {student.dob
+                        ? new Date(student.dob).toLocaleDateString()
+                        : "—"}
+                    </p>
+                  </div>
+                )}
+                {renderField("Gender", "gender", student.gender)}
+                {renderField("Mobile Number", "mobile", student.mobile, "tel")}
+                {renderField("Email", "email", student.email, "email")}
+                {renderField("Caste", "caste", student.caste)}
+                {renderField("Religion", "religion", student.religion)}
+                {renderField("Nationality", "nationality", student.nationality)}
+                {renderField(
+                  "Marital Status",
+                  "maritalStatus",
+                  student.maritalStatus
+                )}
+                {renderField("Aadhaar Number", "aadhaar", student.aadhaar)}
+                {isEditing ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Present Address
+                    </label>
+                    <textarea
+                      value={editData.presentAddress || ""}
+                      onChange={(e) =>
+                        handleInputChange("presentAddress", e.target.value)
+                      }
+                      rows={3}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Present Address
+                    </label>
+                    <div className="mt-1 text-sm text-gray-900">
+                      {student.presentAddress ? (
+                        Array.isArray(student.presentAddress) ? (
+                          <ul className="list-disc list-inside space-y-1">
+                            {student.presentAddress.map((addr, index) => (
+                              <li key={index}>{addr}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p>{student.presentAddress}</p>
+                        )
+                      ) : (
+                        "—"
+                      )}
+                    </div>
+                  </div>
+                )}
+                {renderField(
+                  "Present PIN Code",
+                  "presentPin",
+                  student.presentPin
+                )}
+                {isEditing ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Permanent Address
+                    </label>
+                    <textarea
+                      value={editData.permanentAddress || ""}
+                      onChange={(e) =>
+                        handleInputChange("permanentAddress", e.target.value)
+                      }
+                      rows={3}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Permanent Address
+                    </label>
+                    <div className="mt-1 text-sm text-gray-900">
+                      {student.permanentAddress ? (
+                        Array.isArray(student.permanentAddress) ? (
+                          <ul className="list-disc list-inside space-y-1">
+                            {student.permanentAddress.map((addr, index) => (
+                              <li key={index}>{addr}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p>{student.permanentAddress}</p>
+                        )
+                      ) : (
+                        "—"
+                      )}
+                    </div>
+                  </div>
+                )}
+                {renderField(
+                  "Permanent PIN Code",
+                  "permanentPin",
+                  student.permanentPin
+                )}
+              </div>
+            </div>
+
+            {/* Academic Information */}
+            <div className="border border-gray-200 rounded-md p-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                Academic Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {renderField(
+                  "Admission For",
+                  "admissionfor",
+                  student.admissionfor
+                )}
+                {renderField("Stream", "stream", student.stream)}
+                {renderField("Session", "session", student.session)}
+                {renderField("Medium", "medium", student.medium)}
+                {renderField("Mode", "mode", student.mode)}
+                {renderField("Exam Name", "examName", student.examName)}
+                {renderField("Board", "board", student.board)}
+                {renderField("Roll Number", "rollNumber", student.rollNumber)}
+                {renderField("Marks", "marks", student.marks)}
+                {renderField(
+                  "Year of Passing",
+                  "yearOfPassing",
+                  student.yearOfPassing
+                )}
+                {renderField("Percentage", "percentage", student.percentage)}
+              </div>
+
+              {/* Selected Subjects */}
+              <div className="mt-6">
+                <h3 className="text-md font-semibold text-gray-700 mb-4">
+                  Selected Subjects
+                </h3>
+                {(student.langSubject && student.langSubject.length > 0) ||
+                (student["non-langSubject"] &&
+                  student["non-langSubject"].length > 0) ||
+                (student.addSubject && student.addSubject.length > 0) ? (
+                  <table className="min-w-full border border-gray-200 rounded-md overflow-hidden text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left border-b">
+                          Category
+                        </th>
+                        <th className="px-3 py-2 text-left border-b">
+                          Subject
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(student.langSubject || []).map((s, i) => (
+                        <tr key={`lang-${i}`}>
+                          <td className="px-3 py-2 border-b">Language</td>
+                          <td className="px-3 py-2 border-b">{s}</td>
+                        </tr>
+                      ))}
+                      {(student["non-langSubject"] || []).map((s, i) => (
+                        <tr key={`nonlang-${i}`}>
+                          <td className="px-3 py-2 border-b">Non-Language</td>
+                          <td className="px-3 py-2 border-b">{s}</td>
+                        </tr>
+                      ))}
+                      {(student.addSubject || []).map((s, i) => (
+                        <tr key={`add-${i}`}>
+                          <td className="px-3 py-2 border-b">Additional</td>
+                          <td className="px-3 py-2 border-b">{s}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="text-sm text-gray-500 italic">
+                    No subjects selected
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Documents - Read Only */}
+            {/* Uploaded Documents */}
+            {uploads && uploads.documents && uploads.documents.length > 0 && (
+              <div className="print:hidden">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    Uploaded Documents
+                  </h2>
+                  <button
+                    onClick={() => {
+                      uploads.documents.forEach((docUrl, index) => {
+                        setTimeout(() => {
+                          downloadDocument(docUrl, `document_${index + 1}.pdf`);
+                        }, index * 1000);
+                      });
+                    }}
+                    className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 text-sm"
+                  >
+                    Download All Documents
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {uploads.documents.map((docUrl, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 border border-gray-200 rounded-md"
+                    >
+                      <span className="text-sm font-medium text-gray-700">
+                        Document {index + 1}
+                      </span>
+                      <div className="flex gap-2">
+                        <a
+                          href={docUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-1 bg-blue-900 text-white rounded-md hover:bg-blue-700 text-sm"
+                        >
+                          View Document
+                        </a>
+                        <button
+                          onClick={() =>
+                            downloadDocument(
+                              docUrl,
+                              `document_${index + 1}.pdf`
+                            )
+                          }
+                          className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                        >
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Application Status */}
+            <div className="print:hidden">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                Application Status
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-red-100 text-red-700 rounded-md text-sm">
+                  {student.status || "Not Approved"}
+                </span>
+                <button className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">
+                  Approve Application
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

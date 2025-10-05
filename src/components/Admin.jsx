@@ -82,6 +82,7 @@ const Admin = () => {
           studentName: d.studentName || "",
           mobile: d.mobile || "",
           email: d.email || "",
+          admissionBy: d.admissionBy || "",
           fatherName: d.fatherName || "",
           motherName: d.motherName || "",
           dob: d.dob || "",
@@ -100,6 +101,8 @@ const Admin = () => {
           aadhaar: d.aadhaar || "",
           presentAddress: d.presentAddress || "",
           presentPin: d.presentPin || "",
+          state: d.state || "",
+          district: d.district || "",
           examName: d.examName || "",
           board: d.board || "",
           yearOfPassing: d.yearOfPassing || "",
@@ -136,6 +139,8 @@ const Admin = () => {
           r.aadhaar,
           r.rollNumber,
           r.formNumber,
+          r.state,
+          r.district,
         ]
           .join(" ")
           .toLowerCase()
@@ -222,14 +227,6 @@ const Admin = () => {
             <option value="createdAt">Sort by Created</option>
             <option value="studentName">Sort by Name</option>
           </select>
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            value={sortDir}
-            onChange={(e) => setSortDir(e.target.value)}
-          >
-            <option value="asc">Asc</option>
-            <option value="desc">Desc</option>
-          </select>
         </div>
       </div>
 
@@ -253,16 +250,16 @@ const Admin = () => {
                   Student Name
                 </th>
                 <th className="text-left font-semibold px-4 py-2 border-b">
-                  Email
-                </th>
-                <th className="text-left font-semibold px-4 py-2 border-b">
-                  Phone
+                  Admission By
                 </th>
                 <th className="text-left font-semibold px-4 py-2 border-b">
                   Admission For
                 </th>
                 <th className="text-left font-semibold px-4 py-2 border-b">
-                  Status
+                  State
+                </th>
+                <th className="text-left font-semibold px-4 py-2 border-b">
+                  District
                 </th>
                 <th className="text-left font-semibold px-4 py-2 border-b">
                   Action
@@ -283,23 +280,17 @@ const Admin = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 border-b text-xs">{r.email}</td>
-                  <td className="px-4 py-3 border-b text-xs">{r.mobile}</td>
+                  <td className="px-4 py-3 border-b text-xs">
+                    {r.admissionBy || "-"}
+                  </td>
                   <td className="px-4 py-3 border-b text-xs">
                     {r.admissionfor || "N/A"}
                   </td>
-                  <td className="px-4 py-3 border-b">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        r.status === "Approved"
-                          ? "bg-green-100 text-green-800"
-                          : r.status === "Rejected"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {r.status}
-                    </span>
+                  <td className="px-4 py-3 border-b text-xs">
+                    {r.state || "-"}
+                  </td>
+                  <td className="px-4 py-3 border-b text-xs">
+                    {r.district || "-"}
                   </td>
                   <td className="px-4 py-3 border-b">
                     <button

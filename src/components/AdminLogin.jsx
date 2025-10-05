@@ -45,7 +45,7 @@ const AdminLogin = ({ onLogin }) => {
         email.toLowerCase().includes("administrator") ||
         email.endsWith("@admin.dbos.com") ||
         email.endsWith("@dbos.com") ||
-        email === "sudeepacharjeegp@gmail.com";
+        email === "dbosadmin@gmail.com";
 
       if (!isAdmin) {
         await account.deleteSession("current");
