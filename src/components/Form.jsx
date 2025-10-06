@@ -32,9 +32,12 @@ const Form = () => {
     "non-langSubject": [],
     addSubject: [],
     permanentAddress: "",
+    po: "",
+    district: "",
+    state: "",
+    permanentPin: "",
     mobile: "",
     email: "",
-    permanentPin: "",
     aadhaar: "",
     presentAddress: "",
     presentPin: "",
@@ -53,8 +56,6 @@ const Form = () => {
     centerCode: "",
     coordinatorName: "",
     coordinatorCode: "",
-    state: "",
-    district: "",
   };
   const [form, setForm] = useState(initialForm);
   // Declaration checks (must be accepted to submit)
@@ -112,43 +113,73 @@ const Form = () => {
   const nonLangSubject = form["non-langSubject"] || [];
   const addSubject = form.addSubject || [];
 
-  // Subject options based on admission level
-  const subjectOptions = {
-    "Secondary (10th)": {
-      language: ["Hindi", "English", "Bengali", "Assamese"],
-      nonLanguage: ["Mathematics", "Science", "Social Science"],
-      additional: ["Computer Science", "Data Entry Operator"],
-    },
-    "Sr. Secondary (12th)": {
-      language: ["Hindi", "English", "Sanskrit", "Bengali", "Assamese"],
-      nonLanguage: [
-        "Mathematics",
-        "Home Science*",
-        "Psychology*",
-        "Geography*",
-        "Economics",
-        "Business Studies",
-        "Physics*",
-        "History",
-        "Environmental Science*",
-        "Chemistry*",
-        "Political Science",
-        "Biology*",
-        "Accountancy",
-        "Introduction to Law",
-        "Computer Science*",
-        "Sociology",
-        "Tourism",
-        "Physical Education and Yoga*",
-      ],
-      additional: [
-        "Computer Science",
-        "Data Entry Operator",
-        "Hotel Front Office Operation",
-        "House Keeping",
-      ],
-    },
+  // Subject options based on admission level and stream
+  const getSubjectOptions = (admissionLevel, stream) => {
+    const baseOptions = {
+      "Secondary (10th)": {
+        language: ["Hindi", "English", "Bengali", "Assamese"],
+        nonLanguage: ["Mathematics", "Science", "Social Science"],
+        additional: ["Computer Science", "Data Entry Operator"],
+      },
+      "Sr. Secondary (12th)": {
+        language: ["Hindi", "English", "Sanskrit", "Bengali", "Assamese"],
+        nonLanguage: [],
+        additional: [
+          "Computer Science",
+          "Data Entry Operator",
+          "Hotel Front Office Operation",
+          "House Keeping",
+        ],
+      },
+    };
+
+    // For 12th standard, show stream-specific subjects
+    if (admissionLevel === "Sr. Secondary (12th)" && stream) {
+      const streamSubjects = {
+        "Non-Medical": [
+          "Physics",
+          "Chemistry",
+          "Biology",
+          "Mathematics",
+          "Computer Science",
+          "Environmental Science",
+          "Home Science",
+          "Psychology",
+        ],
+        Medical: [
+          "Physics",
+          "Chemistry",
+          "Biology",
+          "Mathematics",
+          "Computer Science",
+          "Environmental Science",
+          "Home Science",
+          "Psychology",
+        ],
+        Commerce: [
+          "Accountancy",
+          "Business Studies",
+          "Economics",
+          "Introduction to Law",
+        ],
+        Arts: [
+          "History",
+          "Geography",
+          "Political Science",
+          "Sociology",
+          "Tourism",
+          "Physical Education and Yoga",
+        ],
+      };
+
+      baseOptions["Sr. Secondary (12th)"].nonLanguage =
+        streamSubjects[stream] || [];
+    }
+
+    return baseOptions[admissionLevel] || baseOptions["Secondary (10th)"];
   };
+
+  const subjectOptions = getSubjectOptions(form.admissionfor, form.stream);
 
   // Dropdown options
   const genderOptions = ["Male", "Female", "Other"];
@@ -156,22 +187,90 @@ const Form = () => {
   const casteOptions = ["General", "SC", "ST", "OBC", "MOBC"];
   const religionOptions = [
     "Hindu",
-    "Muslim",
+    "Islam",
     "Christian",
     "Sikh",
     "Buddhist",
     "Jain",
     "Other",
   ];
-  const maritalStatusOptions = ["Single", "Married", "Divorced", "Widowed"];
+  const maritalStatusOptions = ["Married", "Unmarried", "Divorced", "Widowed"];
   const streamOptions = ["Arts", "Commerce", "Non-Medical", "Medical"];
   const sessionOptions = ["December", "January"];
   const mediumOptions = ["English", "Hindi"];
   const modeOptions = ["Virtual Mode"];
 
+  const stateOptions = [
+    "Andhra Pradesh",
+    "Arunachal Pradesh",
+    "Assam",
+    "Bihar",
+    "Chhattisgarh",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Odisha",
+    "Punjab",
+    "Rajasthan",
+    "Sikkim",
+    "Tamil Nadu",
+    "Telangana",
+    "Tripura",
+    "Uttar Pradesh",
+    "Uttarakhand",
+    "West Bengal",
+    "Andaman and Nicobar Islands",
+    "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu",
+    "Delhi",
+    "Jammu and Kashmir",
+    "Ladakh",
+    "Lakshadweep",
+    "Puducherry",
+  ];
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    // Input validation
+    if (name === "aadhaar" && value.length > 12) {
+      return; // Don't update if more than 12 digits
+    }
+    if (name === "mobile" && value.length > 10) {
+      return; // Don't update if more than 10 digits
+    }
+
+    setForm((prev) => {
+      const newForm = { ...prev, [name]: value };
+
+      // Auto-select English when admission level is selected
+      if (name === "admissionfor" && value) {
+        const currentLangSubjects = newForm.langSubject || [];
+        if (!currentLangSubjects.includes("English")) {
+          newForm.langSubject = [...currentLangSubjects, "English"];
+        }
+      }
+
+      // Clear non-language subjects when stream changes for 12th
+      if (
+        name === "stream" &&
+        newForm.admissionfor === "Sr. Secondary (12th)"
+      ) {
+        newForm["non-langSubject"] = [];
+      }
+
+      return newForm;
+    });
   };
 
   const toggleDeclaration = (key) => {
@@ -319,9 +418,12 @@ const Form = () => {
         "non-langSubject": form["non-langSubject"] || [],
         addSubject: form.addSubject || [],
         permanentAddress: form.permanentAddress,
+        po: form.po || "",
+        district: form.district || "",
+        state: form.state || "",
+        permanentPin: form.permanentPin,
         mobile: form.mobile,
         email: form.email,
-        permanentPin: form.permanentPin,
         aadhaar: form.aadhaar,
         presentAddress: form.presentAddress,
         presentPin: form.presentPin,
@@ -339,8 +441,6 @@ const Form = () => {
         centerCode: form.centerCode || "",
         coordinatorName: form.coordinatorName || "",
         coordinatorCode: form.coordinatorCode || "",
-        state: form.state || "",
-        district: form.district || "",
       };
 
       console.log("Form data being sent to database:", formDataForDB);
@@ -840,26 +940,32 @@ const Form = () => {
                       *CHOOSE 2 LANGUAGE SUBJECTS
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {subjectOptions[form.admissionfor]?.language.map(
-                        (subject) => (
-                          <label
-                            key={subject}
-                            className="flex items-center space-x-2 cursor-pointer"
+                      {subjectOptions?.language?.map((subject) => (
+                        <label
+                          key={subject}
+                          className="flex items-center space-x-2 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={langSubject.includes(subject)}
+                            onChange={() =>
+                              handleCheckboxChange("langSubject", subject)
+                            }
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            disabled={subject === "English"}
+                          />
+                          <span
+                            className={`text-sm ${
+                              subject === "English"
+                                ? "text-gray-500"
+                                : "text-gray-700"
+                            }`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={langSubject.includes(subject)}
-                              onChange={() =>
-                                handleCheckboxChange("langSubject", subject)
-                              }
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">
-                              {subject}
-                            </span>
-                          </label>
-                        )
-                      )}
+                            {subject}{" "}
+                            {subject === "English" ? "(Auto-selected)" : ""}
+                          </span>
+                        </label>
+                      ))}
                     </div>
                     <p className="text-xs text-gray-500 mt-2">
                       Selected: {langSubject.length}/2
@@ -867,13 +973,15 @@ const Form = () => {
                   </div>
 
                   {/* Non-Language Subjects */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <h3 className="text-lg font-bold text-red-600 mb-4">
-                      *CHOOSE 3 NON-LANGUAGE SUBJECTS
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {subjectOptions[form.admissionfor]?.nonLanguage.map(
-                        (subject) => (
+                  {form.admissionfor === "Sr. Secondary (12th)" &&
+                  form.stream ? (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h3 className="text-lg font-bold text-red-600 mb-4">
+                        *CHOOSE NON-LANGUAGE SUBJECTS FOR{" "}
+                        {form.stream.toUpperCase()} STREAM
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {subjectOptions?.nonLanguage?.map((subject) => (
                           <label
                             key={subject}
                             className="flex items-center space-x-2 cursor-pointer"
@@ -890,31 +998,29 @@ const Form = () => {
                               {subject}
                             </span>
                           </label>
-                        )
-                      )}
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Selected: {nonLangSubject.length}/
+                        {subjectOptions?.nonLanguage?.length || 0}
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Selected: {nonLangSubject.length}/3
-                    </p>
-                  </div>
-
-                  {/* Additional Subjects */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <h3 className="text-lg font-bold text-red-600 mb-4">
-                      *CHOOSE 1 ADDITIONAL SUBJECT
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {subjectOptions[form.admissionfor]?.additional.map(
-                        (subject) => (
+                  ) : form.admissionfor === "Secondary (10th)" ? (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h3 className="text-lg font-bold text-red-600 mb-4">
+                        *CHOOSE 3 NON-LANGUAGE SUBJECTS
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {subjectOptions?.nonLanguage?.map((subject) => (
                           <label
                             key={subject}
                             className="flex items-center space-x-2 cursor-pointer"
                           >
                             <input
                               type="checkbox"
-                              checked={addSubject.includes(subject)}
+                              checked={nonLangSubject.includes(subject)}
                               onChange={() =>
-                                handleCheckboxChange("addSubject", subject)
+                                handleCheckboxChange("non-langSubject", subject)
                               }
                               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                             />
@@ -922,8 +1028,38 @@ const Form = () => {
                               {subject}
                             </span>
                           </label>
-                        )
-                      )}
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Selected: {nonLangSubject.length}/3
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {/* Additional Subjects */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <h3 className="text-lg font-bold text-red-600 mb-4">
+                      *CHOOSE 1 ADDITIONAL SUBJECT
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {subjectOptions?.additional?.map((subject) => (
+                        <label
+                          key={subject}
+                          className="flex items-center space-x-2 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={addSubject.includes(subject)}
+                            onChange={() =>
+                              handleCheckboxChange("addSubject", subject)
+                            }
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">
+                            {subject}
+                          </span>
+                        </label>
+                      ))}
                     </div>
                     <p className="text-xs text-gray-500 mt-2">
                       Selected: {addSubject.length}/1
@@ -950,56 +1086,26 @@ const Form = () => {
 
               <div className={sectionTitleClass}>Permanent Address</div>
               <div>
+                <label className={labelClass}>Address Details</label>
                 <textarea
                   className={`${inputClass} min-h-20 resize-y`}
                   name="permanentAddress"
                   value={form.permanentAddress}
                   onChange={handleInputChange}
+                  placeholder="Enter your complete address details"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className={labelClass}>Mobile No.</label>
-                  <input
-                    className={inputClass}
-                    type="tel"
-                    name="mobile"
-                    value={form.mobile}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Email Id</label>
-                  <input
-                    className={inputClass}
-                    type="email"
-                    name="email"
-                    value={form.email}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>PIN</label>
+                  <label className={labelClass}>P.O.</label>
                   <input
                     className={inputClass}
                     type="text"
-                    name="permanentPin"
-                    value={form.permanentPin}
+                    name="po"
+                    value={form.po || ""}
                     onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label className={labelClass}>State</label>
-                  <input
-                    className={inputClass}
-                    type="text"
-                    name="state"
-                    value={form.state}
-                    onChange={handleInputChange}
+                    placeholder="Post Office"
                   />
                 </div>
                 <div>
@@ -1010,6 +1116,62 @@ const Form = () => {
                     name="district"
                     value={form.district}
                     onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>State</label>
+                  <select
+                    className={inputClass}
+                    name="state"
+                    value={form.state}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select State</option>
+                    {stateOptions.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>PIN</label>
+                  <input
+                    className={inputClass}
+                    type="text"
+                    name="permanentPin"
+                    value={form.permanentPin}
+                    onChange={handleInputChange}
+                    maxLength="6"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Mobile No.</label>
+                  <input
+                    className={inputClass}
+                    type="tel"
+                    name="mobile"
+                    value={form.mobile}
+                    onChange={handleInputChange}
+                    maxLength="10"
+                    placeholder="10 digit mobile number"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Email Id</label>
+                  <input
+                    className={inputClass}
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleInputChange}
+                    placeholder="your.email@example.com"
                   />
                 </div>
               </div>
@@ -1039,6 +1201,8 @@ const Form = () => {
                   name="aadhaar"
                   value={form.aadhaar}
                   onChange={handleInputChange}
+                  maxLength="12"
+                  placeholder="12 digit Aadhaar number"
                 />
               </div>
 
