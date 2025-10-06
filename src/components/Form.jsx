@@ -11,6 +11,8 @@ const Form = () => {
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [validationOpen, setValidationOpen] = useState(false);
+  const [missingFields, setMissingFields] = useState([]);
   const [studentId, setStudentId] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -180,6 +182,79 @@ const Form = () => {
   };
 
   const subjectOptions = getSubjectOptions(form.admissionfor, form.stream);
+
+  // Human-friendly labels for validation dialog
+  const fieldLabels = {
+    studentName: "Name of the Student",
+    fatherName: "Father's Name",
+    motherName: "Mother's Name",
+    dob: "Date of Birth",
+    gender: "Gender",
+    nationality: "Nationality",
+    caste: "Caste",
+    religion: "Religion",
+    maritalStatus: "Marital Status",
+    stream: "Stream",
+    admissionfor: "Admission For",
+    langSubject: "Language Subjects (choose 2 incl. English)",
+    "non-langSubject": "Non-Language Subjects",
+    addSubject: "Additional Subject",
+    permanentAddress: "Permanent Address",
+    po: "P.O.",
+    district: "District",
+    state: "State",
+    permanentPin: "Permanent PIN",
+    mobile: "Mobile No.",
+    email: "Email Id",
+    aadhaar: "Aadhaar No.",
+    presentAddress: "Present Address",
+    presentPin: "Present PIN",
+    examName: "Name of Exam",
+    board: "Board/Institution",
+    yearOfPassing: "Year of Passing",
+    rollNumber: "Roll Number",
+    marks: "Marks Obtained",
+    percentage: "Percentage",
+    session: "Session",
+    medium: "Medium",
+    mode: "Mode",
+    admissionBy: "Admission By",
+    centerName: "Center Name",
+    centerCode: "Center Code",
+    coordinatorName: "Coordinator Name",
+    coordinatorCode: "Coordinator Code",
+    photoFile: "Passport Size Photo",
+  };
+
+  const openValidationDialog = (fields) => {
+    setMissingFields(fields);
+    setValidationOpen(true);
+  };
+
+  const jumpToField = (key) => {
+    setValidationOpen(false);
+    if (key === "photoFile") {
+      // focus the photo file input
+      const photoInput = document.querySelector(
+        'input[type="file"][accept^="image/"]'
+      );
+      if (photoInput) {
+        photoInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        photoInput.focus();
+      }
+      return;
+    }
+    const el = document.querySelector(`[name="${key}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // slight delay to ensure into view before focusing
+      setTimeout(() => {
+        try {
+          el.focus();
+        } catch (_) {}
+      }, 200);
+    }
+  };
 
   // Dropdown options
   const genderOptions = ["Male", "Female", "Other"];
@@ -390,8 +465,50 @@ const Form = () => {
   // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!allFilled || !photoFile) {
-      alert("Please fill all required fields and select passport photo");
+    // Build precise list of missing fields
+    const missing = [];
+
+    // core required fields (with dynamic stream rule)
+    for (const key of dynamicRequiredFields) {
+      const value = form[key];
+      const isArray = Array.isArray(value);
+      const empty = isArray
+        ? (value || []).length === 0
+        : String(value || "").trim().length === 0;
+      if (empty) missing.push(key);
+    }
+
+    // subject count rules
+    if ((form.langSubject || []).length < 2) {
+      if (!missing.includes("langSubject")) missing.push("langSubject");
+    }
+    if (
+      form.admissionfor === "Secondary (10th)" &&
+      (form["non-langSubject"] || []).length < 3
+    ) {
+      if (!missing.includes("non-langSubject")) missing.push("non-langSubject");
+    }
+    if (form.admissionfor === "Sr. Secondary (12th)" && form.stream) {
+      if ((form["non-langSubject"] || []).length < 3) {
+        if (!missing.includes("non-langSubject"))
+          missing.push("non-langSubject");
+      }
+    }
+    if ((form.addSubject || []).length < 1) {
+      if (!missing.includes("addSubject")) missing.push("addSubject");
+    }
+
+    // declarations
+    if (currentStep === 1 && !Object.values(declaration).every(Boolean)) {
+      // surface as a friendly item; user must check all
+      if (!missing.includes("declaration")) missing.push("declaration");
+    }
+
+    // photo
+    if (!photoFile) missing.push("photoFile");
+
+    if (missing.length > 0) {
+      openValidationDialog(missing);
       return;
     }
 
@@ -482,11 +599,7 @@ const Form = () => {
   };
 
   const allDeclarationsChecked = Object.values(declaration).every(Boolean);
-  const isSubmitDisabled =
-    submitting ||
-    !allFilled ||
-    !photoFile ||
-    (currentStep === 1 && !allDeclarationsChecked);
+  const isSubmitDisabled = submitting; // Allow click to show precise missing fields dialog
 
   // Step navigation functions
   const goToStep = (step) => {
@@ -1490,6 +1603,74 @@ const Form = () => {
                 </button>
               </div>
             </form>
+          )}
+          {/* Validation Dialog */}
+          {validationOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div
+                className="absolute inset-0 bg-black opacity-40"
+                onClick={() => setValidationOpen(false)}
+              />
+              <div className="relative z-10 w-full max-w-lg mx-4 rounded-lg bg-white shadow-lg border border-gray-200">
+                <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-blue-900">
+                    Please complete the following
+                  </h3>
+                  <button
+                    className="text-gray-600 hover:text-gray-900"
+                    onClick={() => setValidationOpen(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="px-5 py-4 max-h-80 overflow-auto">
+                  {missingFields.includes("declaration") && (
+                    <div className="mb-3 p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
+                      Please read and check all items in the Declaration
+                      section.
+                    </div>
+                  )}
+                  <ul className="list-disc pl-5 space-y-2 text-sm text-gray-800">
+                    {missingFields
+                      .filter((k) => k !== "declaration")
+                      .map((key) => (
+                        <li key={key}>
+                          <button
+                            type="button"
+                            className="text-left text-blue-700 hover:underline"
+                            onClick={() => jumpToField(key)}
+                          >
+                            {fieldLabels[key] || key}
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+                <div className="px-5 py-3 border-t border-gray-200 flex items-center justify-end gap-2">
+                  {missingFields.length > 0 && (
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 rounded-md bg-blue-900 text-white hover:bg-blue-700"
+                      onClick={() =>
+                        jumpToField(
+                          missingFields.find((k) => k !== "declaration") ||
+                            missingFields[0]
+                        )
+                      }
+                    >
+                      Go to first missing field
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 rounded-md bg-white border border-gray-300 text-gray-900 hover:bg-gray-50"
+                    onClick={() => setValidationOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Step 2: Document Upload */}
