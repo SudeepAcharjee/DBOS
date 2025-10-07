@@ -674,11 +674,7 @@ const StudentDetail = ({ studentId }) => {
                 readOnly={!isEditing}
               />
             </div>
-            <div className="grid grid-cols-3 gap-3 print-avoid-break">
-              <div></div>
-              <div>{renderField("PIN", "presentPin", student.presentPin)}</div>
-              <div></div>
-            </div>
+            
 
             <div
               className="my-4 rounded-md"

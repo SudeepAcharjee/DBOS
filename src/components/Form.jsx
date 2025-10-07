@@ -61,6 +61,7 @@ const Form = () => {
     coordinatorName: "",
     coordinatorCode: "",
     sameAsPermanent: false,
+    previousQualifyingExam: "",
   };
   const [form, setForm] = useState(initialForm);
   // Declaration checks (must be accepted to submit)
@@ -133,12 +134,19 @@ const Form = () => {
   const getSubjectOptions = (admissionLevel, stream) => {
     const baseOptions = {
       "Secondary (10th)": {
-        language: ["Hindi", "English", "Bengali", "Assamese"],
+        language: ["Hindi", "English", "Bengali", "Assamese", "Tamil"],
         nonLanguage: ["Mathematics", "Science", "Social Science"],
         additional: ["Computer Science", "Data Entry Operator"],
       },
       "Sr. Secondary (12th)": {
-        language: ["Hindi", "English", "Sanskrit", "Bengali", "Assamese"],
+        language: [
+          "Hindi",
+          "English",
+          "Sanskrit",
+          "Bengali",
+          "Assamese",
+          "Tamil",
+        ],
         nonLanguage: [],
         additional: [
           "Computer Science",
@@ -239,6 +247,7 @@ const Form = () => {
     coordinatorCode: "Coordinator Code",
     photoFile: "Passport Size Photo",
     signatureFile: "Signature",
+    previousQualifyingExam: "Previous Qualifying Exam",
   };
 
   const openValidationDialog = (fields) => {
@@ -301,7 +310,7 @@ const Form = () => {
   const streamOptions = ["Arts", "Commerce", "Non-Medical", "Medical"];
   const sessionOptions = ["December", "January"];
   const mediumOptions = ["English", "Hindi"];
-  const modeOptions = ["Virtual Mode"];
+  const modeOptions = ["Online Mode", "ODL Mode"];
 
   const stateOptions = [
     "Andhra Pradesh",
@@ -598,6 +607,14 @@ const Form = () => {
       if (!missing.includes("addSubject")) missing.push("addSubject");
     }
 
+    // previous qualifying exam required for 10th only
+    if (form.admissionfor === "Secondary (10th)") {
+      if (!String(form.previousQualifyingExam || "").trim()) {
+        if (!missing.includes("previousQualifyingExam"))
+          missing.push("previousQualifyingExam");
+      }
+    }
+
     // declarations
     if (currentStep === 1 && !Object.values(declaration).every(Boolean)) {
       // surface as a friendly item; user must check all
@@ -659,6 +676,7 @@ const Form = () => {
         centerCode: form.centerCode || "",
         coordinatorName: form.coordinatorName || "",
         coordinatorCode: form.coordinatorCode || "",
+        previousQualifyingExam: form.previousQualifyingExam || "",
       };
 
       console.log("Form data being sent to database:", formDataForDB);
@@ -935,7 +953,7 @@ const Form = () => {
                   onChange={handleInputChange}
                 >
                   <option value="">Select</option>
-                  <option value="Study Center">Study Center</option>
+                  <option value="Study Centre">Study Centre</option>
                   <option value="Counseling Center">Counseling Center</option>
                   <option value="State Cordinator">State Cordinator</option>
                 </select>
@@ -944,7 +962,7 @@ const Form = () => {
               {form.admissionBy === "Study Center" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className={labelClass}>Center Name</label>
+                    <label className={labelClass}>Centre Name</label>
                     <input
                       className={inputClass}
                       type="text"
@@ -954,7 +972,7 @@ const Form = () => {
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Center Code</label>
+                    <label className={labelClass}>Centre Code</label>
                     <input
                       className={inputClass}
                       type="text"
@@ -1594,6 +1612,27 @@ const Form = () => {
                         onChange={handleInputChange}
                       />
                     </div>
+                  </div>
+                </>
+              )}
+
+              {form.admissionfor === "Secondary (10th)" && (
+                <>
+                  <div className={sectionTitleClass}>
+                    Details of Qualifying Examination
+                  </div>
+                  <div>
+                    <label className={labelClass}>
+                      Previous Qualifying Exam
+                    </label>
+                    <input
+                      className={inputClass}
+                      type="text"
+                      name="previousQualifyingExam"
+                      value={form.previousQualifyingExam}
+                      onChange={handleInputChange}
+                      placeholder="Enter previous qualifying exam"
+                    />
                   </div>
                 </>
               )}
