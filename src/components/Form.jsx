@@ -10,6 +10,8 @@ const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 const Form = () => {
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
+  const [signaturePreviewUrl, setSignaturePreviewUrl] = useState("");
+  const [signatureFile, setSignatureFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [validationOpen, setValidationOpen] = useState(false);
   const [missingFields, setMissingFields] = useState([]);
@@ -58,6 +60,7 @@ const Form = () => {
     centerCode: "",
     coordinatorName: "",
     coordinatorCode: "",
+    sameAsPermanent: false,
   };
   const [form, setForm] = useState(initialForm);
   // Declaration checks (must be accepted to submit)
@@ -100,10 +103,21 @@ const Form = () => {
     "mode",
   ];
 
-  // Make 'stream' optional for Secondary (10th)
+  // Make 'stream' and qualifying examination fields optional for Secondary (10th)
   const dynamicRequiredFields =
     form.admissionfor === "Secondary (10th)"
-      ? requiredFields.filter((k) => k !== "stream")
+      ? requiredFields.filter(
+          (k) =>
+            k !== "stream" &&
+            ![
+              "examName",
+              "board",
+              "yearOfPassing",
+              "rollNumber",
+              "marks",
+              "percentage",
+            ].includes(k)
+        )
       : requiredFields;
 
   const allFilled = dynamicRequiredFields.every(
@@ -224,6 +238,7 @@ const Form = () => {
     coordinatorName: "Coordinator Name",
     coordinatorCode: "Coordinator Code",
     photoFile: "Passport Size Photo",
+    signatureFile: "Signature",
   };
 
   const openValidationDialog = (fields) => {
@@ -241,6 +256,17 @@ const Form = () => {
       if (photoInput) {
         photoInput.scrollIntoView({ behavior: "smooth", block: "center" });
         photoInput.focus();
+      }
+      return;
+    }
+    if (key === "signatureFile") {
+      // focus the signature file input
+      const signatureInput = document.querySelector(
+        'input[type="file"][name="signature"]'
+      );
+      if (signatureInput) {
+        signatureInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        signatureInput.focus();
       }
       return;
     }
@@ -405,6 +431,17 @@ const Form = () => {
     reader.readAsDataURL(file);
   };
 
+  // Signature Upload
+  const handleSignatureChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    setSignatureFile(file || null);
+    if (!file) return setSignaturePreviewUrl("");
+
+    const reader = new FileReader();
+    reader.onload = () => setSignaturePreviewUrl(reader.result);
+    reader.readAsDataURL(file);
+  };
+
   // Helper to upload photo and return { id, url } on submit
   const uploadPhotoAndGetUrl = async (studentId) => {
     if (!photoFile) return { id: "", url: "" };
@@ -462,6 +499,67 @@ const Form = () => {
     return { id: created.$id, url: photoUrl };
   };
 
+  // Helper to upload signature and return { id, url } on submit
+  const uploadSignatureAndGetUrl = async (studentId) => {
+    if (!signatureFile) return { id: "", url: "" };
+    if (!bucketId) throw new Error("Missing bucket id");
+
+    const created = await storage.createFile(
+      bucketId,
+      ID.unique(),
+      signatureFile
+    );
+    console.log("Created signature file:", created);
+
+    const viewRes = storage.getFileView(bucketId, created.$id);
+    const viewUrl = typeof viewRes === "string" ? viewRes : viewRes?.href;
+    console.log("Generated signature viewUrl:", viewUrl);
+
+    if (!created?.$id) throw new Error("Signature upload failed: no fileId");
+    if (!viewUrl || !viewUrl.startsWith("http"))
+      throw new Error("Signature upload failed: invalid url " + viewUrl);
+
+    const signatureUrl = viewUrl;
+    const uploadsCollectionId = import.meta.env
+      .VITE_APPWRITE_COLLECTION_UPLOADS;
+
+    // Check if student already has an uploads record
+    const existingDocs = await databases.listDocuments(
+      databaseId,
+      uploadsCollectionId,
+      [Query.equal("studentId", studentId)]
+    );
+
+    if (existingDocs.documents.length > 0) {
+      // Update existing record with signature info
+      const existingDoc = existingDocs.documents[0];
+      await databases.updateDocument(
+        databaseId,
+        uploadsCollectionId,
+        existingDoc.$id,
+        {
+          signatureUrl,
+          signatureFileId: created.$id,
+        }
+      );
+    } else {
+      // Create new record for this student
+      await databases.createDocument(
+        databaseId,
+        uploadsCollectionId,
+        ID.unique(),
+        {
+          studentId,
+          signatureUrl,
+          signatureFileId: created.$id,
+          documents: [],
+        }
+      );
+    }
+
+    return { id: created.$id, url: signatureUrl };
+  };
+
   // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -504,8 +602,9 @@ const Form = () => {
       if (!missing.includes("declaration")) missing.push("declaration");
     }
 
-    // photo
+    // photo and signature
     if (!photoFile) missing.push("photoFile");
+    if (!signatureFile) missing.push("signatureFile");
 
     if (missing.length > 0) {
       openValidationDialog(missing);
@@ -580,13 +679,23 @@ const Form = () => {
       );
       console.log("✅ Step 2: Photo uploaded successfully");
 
+      // 3. Upload signature with studentId
+      console.log("🔍 Step 3: Uploading signature...");
+      const { id: signatureFileId, url: signatureUrl } =
+        await uploadSignatureAndGetUrl(newStudentId);
+      console.log("✅ Step 3: Signature uploaded successfully");
+
       if (!photoFileId || !photoUrl) {
         throw new Error("Photo upload failed, required fields missing");
       }
 
+      if (!signatureFileId || !signatureUrl) {
+        throw new Error("Signature upload failed, required fields missing");
+      }
+
       console.log("Document created:", studentDoc);
 
-      // 3. Move to step 2 (document upload)
+      // 4. Move to step 2 (document upload)
       setFormSubmitted(true);
       setCurrentStep(2);
       alert("Form submitted successfully! You can now upload your documents.");
@@ -612,17 +721,19 @@ const Form = () => {
     setForm(initialForm);
     setPhotoPreviewUrl("");
     setPhotoFile(null);
+    setSignaturePreviewUrl("");
+    setSignatureFile(null);
     setStudentId(null);
     setCurrentStep(1);
     setFormSubmitted(false);
     localStorage.removeItem("uploadedDocuments");
   };
 
-  // Print page in landscape format
+  // Print page in portrait format
   const downloadFormPDF = async () => {
     const style = document.createElement("style");
     style.media = "print";
-    style.innerHTML = `@page { size: A4 landscape; margin: 10mm; }`;
+    style.innerHTML = `@page { size: A4 portrait; margin: 10mm; }`;
     document.head.appendChild(style);
     const cleanup = () => {
       try {
@@ -759,8 +870,33 @@ const Form = () => {
                     className="sr-only print:hidden"
                   />
                 </label>
+                <div className="flex items-center gap-2 text-xs text-gray-500 print:hidden"></div>
+
+                {/* Signature Upload */}
+                <label className="w-40 h-15 cursor-pointer">
+                  <div className="w-full h-full border-2 border-dashed border-blue-900 rounded-md bg-gray-50 flex items-center justify-center overflow-hidden">
+                    {signaturePreviewUrl ? (
+                      <img
+                        src={signaturePreviewUrl}
+                        alt="Signature"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-500 text-center px-2">
+                        Upload signature
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    name="signature"
+                    accept="image/*"
+                    onChange={handleSignatureChange}
+                    className="sr-only print:hidden"
+                  />
+                </label>
                 <div className="flex items-center gap-2 text-xs text-gray-500 print:hidden">
-                  Photo will be uploaded when you submit the form.
+                  Signature will be uploaded when you submit the form.
                 </div>
               </div>
             )}
@@ -1320,12 +1456,37 @@ const Form = () => {
               </div>
 
               <div className={sectionTitleClass}>Present Address</div>
+              <div className="mb-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.sameAsPermanent}
+                    onChange={(e) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        sameAsPermanent: e.target.checked,
+                        presentAddress: e.target.checked
+                          ? prev.permanentAddress
+                          : prev.presentAddress,
+                        presentPin: e.target.checked
+                          ? prev.permanentPin
+                          : prev.presentPin,
+                      }));
+                    }}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Same as Permanent Address
+                  </span>
+                </label>
+              </div>
               <div>
                 <textarea
                   className={`${inputClass} min-h-20 resize-y`}
                   name="presentAddress"
                   value={form.presentAddress}
                   onChange={handleInputChange}
+                  disabled={form.sameAsPermanent}
                 />
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -1338,6 +1499,7 @@ const Form = () => {
                     name="presentPin"
                     value={form.presentPin}
                     onChange={handleInputChange}
+                    disabled={form.sameAsPermanent}
                   />
                 </div>
                 <div></div>
@@ -1359,74 +1521,78 @@ const Form = () => {
                 </div>
               </div>
 
-              <div className={sectionTitleClass}>
-                Details of Qualifying Examination
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className={labelClass}>Name of Exam</label>
-                  <input
-                    className={inputClass}
-                    type="text"
-                    name="examName"
-                    value={form.examName}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Board/Institution</label>
-                  <input
-                    className={inputClass}
-                    type="text"
-                    name="board"
-                    value={form.board}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Year of Passing</label>
-                  <input
-                    className={inputClass}
-                    type="text"
-                    name="yearOfPassing"
-                    value={form.yearOfPassing}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
+              {form.admissionfor === "Sr. Secondary (12th)" && (
+                <>
+                  <div className={sectionTitleClass}>
+                    Details of Qualifying Examination
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className={labelClass}>Name of Exam</label>
+                      <input
+                        className={inputClass}
+                        type="text"
+                        name="examName"
+                        value={form.examName}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Board/Institution</label>
+                      <input
+                        className={inputClass}
+                        type="text"
+                        name="board"
+                        value={form.board}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Year of Passing</label>
+                      <input
+                        className={inputClass}
+                        type="text"
+                        name="yearOfPassing"
+                        value={form.yearOfPassing}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className={labelClass}>Roll Number</label>
-                  <input
-                    className={inputClass}
-                    type="text"
-                    name="rollNumber"
-                    value={form.rollNumber}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Marks Obtained</label>
-                  <input
-                    className={inputClass}
-                    type="text"
-                    name="marks"
-                    value={form.marks}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Percentage</label>
-                  <input
-                    className={inputClass}
-                    type="text"
-                    name="percentage"
-                    value={form.percentage}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className={labelClass}>Roll Number</label>
+                      <input
+                        className={inputClass}
+                        type="text"
+                        name="rollNumber"
+                        value={form.rollNumber}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Marks Obtained</label>
+                      <input
+                        className={inputClass}
+                        type="text"
+                        name="marks"
+                        value={form.marks}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Percentage</label>
+                      <input
+                        className={inputClass}
+                        type="text"
+                        name="percentage"
+                        value={form.percentage}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>

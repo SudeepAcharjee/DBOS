@@ -95,7 +95,6 @@ const Uploads = ({ studentId }) => {
 
   // List of important documents that need to be uploaded
   const requiredDocuments = [
-    { id: "signature", name: "Signature", required: true },
     { id: "aadhaar_card", name: "Aadhaar Card", required: true },
     { id: "birth_certificate", name: "Birth Certificate", required: true },
     {
@@ -337,18 +336,9 @@ const Uploads = ({ studentId }) => {
                 >
                   {doc.name}
                 </span>
-                {doc.required && (
-                  <span className="text-xs text-red-600 font-medium">
-                    *Required
-                  </span>
-                )}
               </div>
             );
           })}
-        </div>
-        <div className="mt-3 text-xs text-gray-600">
-          <span className="text-red-600">*</span> Required documents must be
-          uploaded
         </div>
       </div>
 
