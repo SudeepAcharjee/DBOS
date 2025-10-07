@@ -56,8 +56,8 @@ const Form = () => {
     mode: "Virtual Mode",
     // New optional fields
     admissionBy: "",
-    centerName: "",
-    centerCode: "",
+    centreName: "",
+    centreCode: "",
     coordinatorName: "",
     coordinatorCode: "",
     sameAsPermanent: false,
@@ -91,8 +91,6 @@ const Form = () => {
     "email",
     "permanentPin",
     "aadhaar",
-    "presentAddress",
-    "presentPin",
     "examName",
     "board",
     "yearOfPassing",
@@ -241,8 +239,8 @@ const Form = () => {
     medium: "Medium",
     mode: "Mode",
     admissionBy: "Admission By",
-    centerName: "Center Name",
-    centerCode: "Center Code",
+    centreName: "Centre Name",
+    centreCode: "Centre Code",
     coordinatorName: "Coordinator Name",
     coordinatorCode: "Coordinator Code",
     photoFile: "Passport Size Photo",
@@ -660,8 +658,9 @@ const Form = () => {
         mobile: form.mobile,
         email: form.email,
         aadhaar: form.aadhaar,
-        presentAddress: form.presentAddress,
-        presentPin: form.presentPin,
+        // map present address/pin to permanent
+        presentAddress: form.permanentAddress,
+        presentPin: form.permanentPin,
         examName: form.examName,
         board: form.board,
         yearOfPassing: form.yearOfPassing,
@@ -672,8 +671,8 @@ const Form = () => {
         medium: form.medium,
         mode: form.mode,
         admissionBy: form.admissionBy || "",
-        centerName: form.centerName || "",
-        centerCode: form.centerCode || "",
+        centreName: form.centreName || "",
+        centreCode: form.centreCode || "",
         coordinatorName: form.coordinatorName || "",
         coordinatorCode: form.coordinatorCode || "",
         previousQualifyingExam: form.previousQualifyingExam || "",
@@ -954,20 +953,20 @@ const Form = () => {
                 >
                   <option value="">Select</option>
                   <option value="Study Centre">Study Centre</option>
-                  <option value="Counseling Center">Counseling Center</option>
+                  <option value="Counseling Centre">Counseling Centre</option>
                   <option value="State Cordinator">State Cordinator</option>
                 </select>
               </div>
 
-              {form.admissionBy === "Study Center" && (
+              {form.admissionBy === "Study Centre" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className={labelClass}>Centre Name</label>
                     <input
                       className={inputClass}
                       type="text"
-                      name="centerName"
-                      value={form.centerName}
+                      name="centreName"
+                      value={form.centreName}
                       onChange={handleInputChange}
                     />
                   </div>
@@ -976,22 +975,22 @@ const Form = () => {
                     <input
                       className={inputClass}
                       type="text"
-                      name="centerCode"
-                      value={form.centerCode}
+                      name="centreCode"
+                      value={form.centreCode}
                       onChange={handleInputChange}
                     />
                   </div>
                 </div>
               )}
 
-              {form.admissionBy === "Counseling Center" && (
+              {form.admissionBy === "Counseling Centre" && (
                 <div>
-                  <label className={labelClass}>Center Name</label>
+                  <label className={labelClass}>Centre Name</label>
                   <input
                     className={inputClass}
                     type="text"
-                    name="centerName"
-                    value={form.centerName}
+                    name="centreName"
+                    value={form.centreName}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -1355,7 +1354,7 @@ const Form = () => {
                 </div>
               </div>
 
-              <div className={sectionTitleClass}>Permanent Address</div>
+              <div className={sectionTitleClass}>Address</div>
               <div>
                 <label className={labelClass}>Address Details</label>
                 <textarea
@@ -1477,55 +1476,7 @@ const Form = () => {
                 />
               </div>
 
-              <div className={sectionTitleClass}>Present Address</div>
-              <div className="mb-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.sameAsPermanent}
-                    onChange={(e) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        sameAsPermanent: e.target.checked,
-                        presentAddress: e.target.checked
-                          ? prev.permanentAddress
-                          : prev.presentAddress,
-                        presentPin: e.target.checked
-                          ? prev.permanentPin
-                          : prev.presentPin,
-                      }));
-                    }}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                  />
-                  <span className="text-sm text-gray-700">
-                    Same as Permanent Address
-                  </span>
-                </label>
-              </div>
-              <div>
-                <textarea
-                  className={`${inputClass} min-h-20 resize-y`}
-                  name="presentAddress"
-                  value={form.presentAddress}
-                  onChange={handleInputChange}
-                  disabled={form.sameAsPermanent}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div></div>
-                <div>
-                  <label className={labelClass}>PIN</label>
-                  <input
-                    className={inputClass}
-                    type="text"
-                    name="presentPin"
-                    value={form.presentPin}
-                    onChange={handleInputChange}
-                    disabled={form.sameAsPermanent}
-                  />
-                </div>
-                <div></div>
-              </div>
+              {/* Present Address removed: using Permanent Address only */}
 
               <div
                 className="my-4 rounded-md"

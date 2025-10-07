@@ -360,17 +360,17 @@ const StudentDetail = ({ studentId }) => {
               />
             </div>
 
-            {/* Center/Coordinator Details */}
-            {student.admissionBy === "Study Center" && (
+            {/* Centre/Coordinator Details */}
+            {student.admissionBy === "Study Centre" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {renderField("Center Name", "centerName", student.centerName)}
-                {renderField("Center Code", "centerCode", student.centerCode)}
+                {renderField("Centre Name", "centreName", student.centreName)}
+                {renderField("Centre Code", "centreCode", student.centreCode)}
               </div>
             )}
 
-            {student.admissionBy === "Counseling Center" && (
+            {student.admissionBy === "Counseling Centre" && (
               <div>
-                {renderField("Center Name", "centerName", student.centerName)}
+                {renderField("Centre Name", "centreName", student.centreName)}
               </div>
             )}
 
@@ -600,9 +600,9 @@ const StudentDetail = ({ studentId }) => {
               </div>
             </div>
 
-            {/* Permanent Address */}
+            {/* Address */}
             <div className="mt-5 mb-2 text-xl font-bold text-blue-900 border-b border-gray-200 pb-1">
-              Permanent Address
+              Address
             </div>
             <div>
               <label className="text-sm font-semibold text-blue-900">
@@ -657,25 +657,7 @@ const StudentDetail = ({ studentId }) => {
             </div>
             <div>{renderField("", "aadhaar", student.aadhaar)}</div>
 
-            {/* Present Address */}
-            <div className="mt-5 mb-2 text-xl font-bold text-blue-900 border-b border-gray-200 pb-1 print-avoid-break">
-              Present Address
-            </div>
-            <div className="print-avoid-break">
-              <label className="text-sm font-semibold text-blue-900">
-                Address Details
-              </label>
-              <textarea
-                value={editData.presentAddress || student.presentAddress || ""}
-                onChange={(e) =>
-                  handleInputChange("presentAddress", e.target.value)
-                }
-                className="w-full px-3 py-2 border border-gray-400 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 print:border-gray-800 print:border-2 min-h-20 resize-y"
-                readOnly={!isEditing}
-              />
-            </div>
-            
-
+            {/* Present Address removed */}
             <div
               className="my-4 rounded-md"
               style={{
