@@ -306,7 +306,7 @@ const Form = () => {
   ];
   const maritalStatusOptions = ["Married", "Unmarried", "Divorced", "Widowed"];
   const streamOptions = ["Arts", "Commerce", "Non-Medical", "Medical"];
-  const sessionOptions = ["December", "January"];
+  const sessionOptions = ["June", "December"];
   const mediumOptions = ["English", "Hindi"];
   const modeOptions = ["Online Mode", "ODL Mode"];
 
