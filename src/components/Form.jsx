@@ -120,9 +120,9 @@ const Form = () => {
         )
       : requiredFields;
 
-  const allFilled = dynamicRequiredFields.every(
-    (k) => String(form[k] || "").trim().length > 0
-  );
+  // const allFilled = dynamicRequiredFields.every(
+  //   (k) => String(form[k] || "").trim().length > 0
+  // );
 
   // Ensure subject arrays are always defined
   const langSubject = form.langSubject || [];
@@ -277,7 +277,9 @@ const Form = () => {
       setTimeout(() => {
         try {
           el.focus();
-        } catch (_) {}
+        } catch {
+          /* no-op */
+        }
       }, 200);
     }
   };
@@ -707,7 +709,7 @@ const Form = () => {
     }
   };
 
-  const allDeclarationsChecked = Object.values(declaration).every(Boolean);
+  // const allDeclarationsChecked = Object.values(declaration).every(Boolean);
   const isSubmitDisabled = submitting; // Allow click to show precise missing fields dialog
 
   // Step navigation functions
@@ -733,12 +735,14 @@ const Form = () => {
   const downloadFormPDF = async () => {
     const style = document.createElement("style");
     style.media = "print";
-    style.innerHTML = `@page { size: A4 portrait; margin: 10mm; }`;
+    style.innerHTML = `@page { size: A4 portrait; margin: 6mm; }`;
     document.head.appendChild(style);
     const cleanup = () => {
       try {
         document.head.removeChild(style);
-      } catch (_) {}
+      } catch {
+        /* no-op */
+      }
       window.removeEventListener("afterprint", cleanup);
     };
     window.addEventListener("afterprint", cleanup);
@@ -752,7 +756,7 @@ const Form = () => {
     "mt-5 mb-2 text-xl font-bold text-blue-900 border-b border-gray-200 pb-1";
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div id="print-root-form" className="max-w-5xl mx-auto">
       <div className="flex flex-col items-center gap-3 py-6">
         <img
           src="/DBOS-logo-300x300.png"

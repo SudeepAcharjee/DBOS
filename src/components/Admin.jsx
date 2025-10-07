@@ -14,7 +14,7 @@ const Admin = () => {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("district");
-  const [sortDir, setSortDir] = useState("asc");
+  const [sortDir, _setSortDir] = useState("asc");
   const [admissionByFilter, setAdmissionByFilter] = useState("");
   const [admissionForFilter, setAdmissionForFilter] = useState("");
 
@@ -70,7 +70,7 @@ const Admin = () => {
         if (d.photoFileId) {
           try {
             avatarUrl = storage.getFilePreview(bucketId, d.photoFileId).href;
-          } catch (_) {
+          } catch {
             avatarUrl = "";
           }
         } else if (d.photoUrl) {
@@ -181,7 +181,7 @@ const Admin = () => {
 
   // Show admin dashboard if authenticated
   return (
-    <div className="max-w-7xl mx-auto my-6">
+    <div id="print-root-admin" className="max-w-7xl mx-auto my-6">
       {/* Header with user info and logout */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
         <div className="flex items-center justify-between">
