@@ -158,7 +158,7 @@ const Form = () => {
     // For 12th standard, show stream-specific subjects
     if (admissionLevel === "Sr. Secondary (12th)" && stream) {
       const streamSubjects = {
-        "Non-Medical": [
+        "Science": [
           "Physics",
           "Chemistry",
           "Biology",
@@ -166,23 +166,11 @@ const Form = () => {
           "Computer Science",
           "Environmental Science",
           "Home Science",
-          "Psychology",
-        ],
-        Medical: [
-          "Physics",
-          "Chemistry",
-          "Biology",
-          "Mathematics",
-          "Computer Science",
-          "Environmental Science",
-          "Home Science",
-          "Psychology",
         ],
         Commerce: [
           "Accountancy",
           "Business Studies",
           "Economics",
-          "Introduction to Law",
         ],
         Arts: [
           "History",
@@ -191,6 +179,8 @@ const Form = () => {
           "Sociology",
           "Tourism",
           "Physical Education and Yoga",
+          "Psychology",
+          "Economics",
         ],
       };
 
@@ -305,7 +295,7 @@ const Form = () => {
     "Other",
   ];
   const maritalStatusOptions = ["Married", "Unmarried", "Divorced", "Widowed"];
-  const streamOptions = ["Arts", "Commerce", "Non-Medical", "Medical"];
+  const streamOptions = ["Arts", "Commerce", "Science"];
   const sessionOptions = ["June", "December"];
   const mediumOptions = ["English", "Hindi"];
   const modeOptions = ["Online Mode", "ODL Mode"];
