@@ -178,8 +178,6 @@ const Form = () => {
           "Political Science",
           "Sociology",
           "Tourism",
-          "Physical Education and Yoga",
-          "Psychology",
           "Economics",
         ],
       };
